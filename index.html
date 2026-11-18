@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MIL.ARCHIVE | 초급간부 군사용어·약어 아카이브</title>
+  <meta name="description" content="MZ 초급간부를 위한 인스타 감성 군사용어·약어 아카이브, 개인화기·분대·소대 전술, 실전 보고문 생성기" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <!-- 미니멀 글래스 상단 바 -->
+  <header class="top-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-avatar">
+          <span>MIL</span>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title-line">
+            <h1>mil.archive</h1>
+            <span class="verified-badge" title="초급간부 실무 인증">✓</span>
+            <span class="brand-pill">ROK OFFICER</span>
+          </div>
+          <p class="brand-sub">야전·행정실 초급간부를 위한 감각적 군사용어 & 전술 노트</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <div class="dtg-chip" title="현재 군사시간 (DTG)">
+          <span class="dtg-dot"></span>
+          <span id="liveDtgClock" class="mono">--</span>
+        </div>
+
+        <button id="supabaseStatusBtn" class="status-pill local" type="button" title="Supabase DB 연결 설정">
+          <span class="status-dot"></span>
+          <span id="supabaseStatusText">Local</span>
+        </button>
+
+        <button id="themeToggleBtn" class="icon-btn" type="button" title="라이트/다크 모드 전환">
+          🌙
+        </button>
+      </div>
+    </div>
+
+    <!-- 플로팅 필 스타일 탭 네비게이션 -->
+    <nav class="main-nav" aria-label="주요 메뉴">
+      <div class="nav-inner">
+        <button class="nav-tab active" data-tab="dictionary">
+          <span class="tab-icon">📖</span> 용어 아카이브
+        </button>
+        <button class="nav-tab" data-tab="report">
+          <span class="tab-icon">✍️</span> 보고체 & 생성기
+        </button>
+        <button class="nav-tab" data-tab="tools">
+          <span class="tab-icon">📡</span> NATO·군사시간
+        </button>
+        <button class="nav-tab" data-tab="reference">
+          <span class="tab-icon">🗂️</span> 참모·부대·군수
+        </button>
+        <button class="nav-tab" data-tab="quiz">
+          <span class="tab-icon">🎯</span> 퀴즈 & 랭킹
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="main-container">
+    <!-- ==================== TAB 1: 용어·약어 사전 ==================== -->
+    <section id="tab-dictionary" class="tab-panel active">
+      <!-- 인스타 프로필/에디토리얼 스타일 대시보드 벤토 그리드 -->
+      <div class="bento-hero">
+        <div class="hero-intro-card">
+          <div class="hero-eyebrow">2026 ROOKIE OFFICER ARCHIVE</div>
+          <h2>임관 첫날부터 에이스처럼,<br/><span>야전 언어와 전술을 한눈에.</span></h2>
+          <p>개인화기 사격부터 분대·소대 공격/방어, 참모 행정까지 꼭 필요한 용어만 감각적으로 정리했습니다.</p>
+        </div>
+
+        <div class="bento-stats-grid">
+          <div class="stat-tile">
+            <span class="stat-label">수록 용어</span>
+            <strong class="stat-value mono" id="statTotalTerms">0</strong>
+          </div>
+          <div class="stat-tile">
+            <span class="stat-label">암기 완료</span>
+            <strong class="stat-value mono text-accent" id="statMasteredTerms">0</strong>
+          </div>
+          <div class="stat-tile">
+            <span class="stat-label">저장함 🔖</span>
+            <strong class="stat-value mono text-gold" id="statBookmarkedTerms">0</strong>
+          </div>
+          <div class="stat-tile stat-progress-tile">
+            <div class="stat-head">
+              <span class="stat-label">나의 숙달률</span>
+              <span class="mono stat-pct" id="statProgressPct">0%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" id="statProgressBar" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 인스타 스토리 스타일 카테고리 필터 바 -->
+      <div class="stories-strip" id="categoryChips">
+        <button class="story-item active" data-category="전체">
+          <span class="story-ring"><span class="story-circle">✨</span></span>
+          <span class="story-name">전체</span>
+        </button>
+        <button class="story-item" data-category="개인화기·사격">
+          <span class="story-ring"><span class="story-circle">🎯</span></span>
+          <span class="story-name">개인화기</span>
+        </button>
+        <button class="story-item" data-category="분대 공격·방어">
+          <span class="story-ring"><span class="story-circle">🪖</span></span>
+          <span class="story-name">분대 전술</span>
+        </button>
+        <button class="story-item" data-category="소대 공격·방어">
+          <span class="story-ring"><span class="story-circle">⚔️</span></span>
+          <span class="story-name">소대 전술</span>
+        </button>
+        <button class="story-item" data-category="작전·훈련">
+          <span class="story-ring"><span class="story-circle">🗺️</span></span>
+          <span class="story-name">작전·훈련</span>
+        </button>
+        <button class="story-item" data-category="정보·보안">
+          <span class="story-ring"><span class="story-circle">🛰️</span></span>
+          <span class="story-name">정보·보안</span>
+        </button>
+        <button class="story-item" data-category="인사·행정">
+          <span class="story-ring"><span class="story-circle">📋</span></span>
+          <span class="story-name">인사·행정</span>
+        </button>
+        <button class="story-item" data-category="군수·장비">
+          <span class="story-ring"><span class="story-circle">🚚</span></span>
+          <span class="story-name">군수·장비</span>
+        </button>
+        <button class="story-item" data-category="통신·체계">
+          <span class="story-ring"><span class="story-circle">📡</span></span>
+          <span class="story-name">통신·체계</span>
+        </button>
+        <button class="story-item" data-category="지휘·일반">
+          <span class="story-ring"><span class="story-circle">🎖️</span></span>
+          <span class="story-name">지휘·일반</span>
+        </button>
+      </div>
+
+      <!-- 검색 및 필터 바 -->
+      <div class="search-toolbar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="용어, 약어(영점사격, 약진, OPCON, TLP), 실무 팁 검색..."
+            autocomplete="off"
+          />
+          <button id="clearSearchBtn" class="clear-btn hidden" type="button" title="검색어 지우기">✕</button>
+        </div>
+
+        <div class="toolbar-right">
+          <select id="importanceFilter" class="select-control" aria-label="중요도 필터">
+            <option value="all">중요도: 전체</option>
+            <option value="필수 암기">🔥 필수 암기</option>
+            <option value="실무 빈출">⭐ 실무 빈출</option>
+          </select>
+
+          <select id="studyFilter" class="select-control" aria-label="학습 상태 필터">
+            <option value="all">보기: 전체</option>
+            <option value="bookmarked">🔖 저장함만</option>
+            <option value="unmastered">📌 미암기만</option>
+            <option value="mastered">✅ 암기완료</option>
+          </select>
+
+          <button id="openAddTermBtn" class="btn-primary" type="button">
+            + 용어 제보
+          </button>
+        </div>
+      </div>
+
+      <div class="result-meta">
+        <span id="resultCountText">총 0개의 용어가 검색되었습니다.</span>
+        <span class="hint-text">카드를 탭하면 선배 간부의 실전 팁과 예문을 볼 수 있어요</span>
+      </div>
+
+      <!-- 인스타 피드/매거진 스타일 카드 그리드 -->
+      <div id="termsGrid" class="terms-grid"></div>
+    </section>
+
+    <!-- ==================== TAB 2: 실전 보고체 & 보고문 생성기 ==================== -->
+    <section id="tab-report" class="tab-panel">
+      <div class="section-header">
+        <h2>✍️ 실전 지휘보고 가이드 & 보고문 생성기</h2>
+        <p>사회 말투를 버리고 지휘관이 한 번에 결심할 수 있는 표준 군대 보고체(결론 선행 + 육하원칙 + 대안 제시)를 완성하세요.</p>
+      </div>
+
+      <div class="report-layout">
+        <div class="panel-card">
+          <div class="panel-title-row">
+            <h3>⚡ 상황별 보고문 자동 생성기</h3>
+            <span class="badge-accent">실무 즉시 복사</span>
+          </div>
+
+          <div class="template-tabs" id="reportTemplateTabs">
+            <button class="tpl-btn active" data-tpl="incident">🚨 긴급·우발상황</button>
+            <button class="tpl-btn" data-tpl="medical">🚑 환자 발생·후송</button>
+            <button class="tpl-btn" data-tpl="duty">🌙 당직근무 결산</button>
+            <button class="tpl-btn" data-tpl="equipment">🔧 장비 결함·정비</button>
+          </div>
+
+          <p id="tplDescription" class="tpl-desc"></p>
+          <form id="reportForm" class="report-form"></form>
+
+          <div class="report-output-box">
+            <div class="output-header">
+              <span>📋 생성된 보고 전문</span>
+              <button id="copyReportBtn" class="btn-secondary btn-sm" type="button">복사하기</button>
+            </div>
+            <textarea id="reportOutput" class="report-textarea" rows="9" readonly></textarea>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-title-row">
+            <h3>💡 사회 말투 vs 군 표준 보고체</h3>
+            <span class="badge-gold">지휘관 선호 1위</span>
+          </div>
+          <div id="speechConversionsList" class="conversions-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: NATO 포네틱 & 군사시간 도구 ==================== -->
+    <section id="tab-tools" class="tab-panel">
+      <div class="section-header">
+        <h2>📡 야전 통신·작전 유틸리티</h2>
+        <p>무전 교신 시 필수적인 NATO 음성 통화표 변환과 군사시간(DTG) / 작전시간(H-Hour) 계산 도구입니다.</p>
+      </div>
+
+      <div class="tools-grid">
+        <div class="panel-card">
+          <div class="panel-title-row">
+            <h3>🎙️ NATO 포네틱 코드 변환기</h3>
+            <button id="speakNatoBtn" class="btn-secondary btn-sm" type="button">🔊 음성 듣기</button>
+          </div>
+          <p class="tpl-desc">차량번호, 호출부호, 약어(예: <code>OPCON 0830</code>, <code>K2C1</code>)를 입력하면 무전용 표준 발음으로 변환합니다.</p>
+          <input
+            type="text"
+            id="natoInput"
+            class="text-input mono full-w"
+            placeholder="변환할 영문/숫자 입력 (예: ALPHA 123)"
+            value="OPCON 0830"
+          />
+          <div id="natoOutput" class="nato-output"></div>
+
+          <details class="nato-table-details">
+            <summary>전체 NATO 알파벳·숫자 일람표 펼치기</summary>
+            <div id="natoFullTable" class="nato-mini-grid"></div>
+          </details>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-title-row">
+            <h3>⏱️ 군사시간(DTG) & H-Hour 계산기</h3>
+            <span class="badge-accent">KST (+9 / Kilo)</span>
+          </div>
+          <p class="tpl-desc">한국 표준시(K) 기준 군사 날짜-시간 그룹(DTG) 생성 및 작전개시시각(H-Hour) 기준 전후 시각을 계산합니다.</p>
+
+          <div class="dtg-converter-box">
+            <label class="field-label">기준 날짜 및 시각 선택</label>
+            <div class="dtg-inputs">
+              <input type="datetime-local" id="dtgDateTimeInput" class="text-input full-w" />
+              <button id="setNowDtgBtn" class="btn-secondary" type="button" style="white-space:nowrap;">현재시각</button>
+            </div>
+            <div class="dtg-result-box">
+              <div class="dtg-row">
+                <span>표준 DTG (한국시간 Kilo):</span>
+                <strong id="dtgResultKilo" class="mono text-accent">--</strong>
+              </div>
+              <div class="dtg-row">
+                <span>유선/문서 간략 표기:</span>
+                <strong id="dtgResultShort" class="mono">--</strong>
+              </div>
+            </div>
+          </div>
+
+          <hr class="divider" />
+
+          <div class="hhour-box">
+            <label class="field-label">작전개시시각 (H-Hour) 기준 시간 계산</label>
+            <div class="hhour-inputs">
+              <div>
+                <span class="mini-label">H-Hour (24시)</span>
+                <input type="time" id="hHourInput" class="text-input full-w" value="05:30" />
+              </div>
+              <div>
+                <span class="mini-label">상대 시간 (예: -2, +3)</span>
+                <input type="number" id="hOffsetInput" class="text-input mono full-w" value="-2" step="0.5" />
+              </div>
+            </div>
+            <div class="hhour-result">
+              <span id="hHourLabel" class="mono">H-2</span>
+              <span>=</span>
+              <strong id="hHourComputed" class="mono text-gold">03:30</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: 참모·부대·군수 도감 ==================== -->
+    <section id="tab-reference" class="tab-panel">
+      <div class="section-header">
+        <h2>🗂️ 초급간부 필수 조직·군수 도감</h2>
+        <p>부대 참모부서(S-1~S-6)별 협조 업무, 제대별 부대기호, 군수품 1종~10종 분류를 한눈에 확인하세요.</p>
+      </div>
+
+      <h3 class="sub-heading">1. 참모부서 (S-1 ~ S-6) 핵심 역할 및 협조 가이드</h3>
+      <div id="staffGuideGrid" class="ref-grid"></div>
+
+      <h3 class="sub-heading">2. 제대별 부대단위 및 전술 부대기호</h3>
+      <div class="table-wrap">
+        <table class="mil-table">
+          <thead>
+            <tr>
+              <th>제대 (부대단위)</th>
+              <th>영문 약어</th>
+              <th>전술 부대기호</th>
+              <th>지휘관 및 주요 직위</th>
+              <th>표준 병력 규모</th>
+            </tr>
+          </thead>
+          <tbody id="echelonTableBody"></tbody>
+        </table>
+      </div>
+
+      <h3 class="sub-heading">3. 군수품 1종 ~ 10종 분류 (암기 공식 포함)</h3>
+      <div id="supplyClassesGrid" class="supply-grid"></div>
+    </section>
+
+    <!-- ==================== TAB 5: 역량 퀴즈 & 리더보드 ==================== -->
+    <section id="tab-quiz" class="tab-panel">
+      <div class="section-header">
+        <h2>🎯 초급간부 군사용어 역량 테스트 & 명예의 전당</h2>
+        <p>개인화기부터 소대 전술까지 랜덤 모의평가를 풀고, Supabase 실시간 리더보드에 내 점수를 기록해 보세요.</p>
+      </div>
+
+      <div class="quiz-layout">
+        <div class="panel-card quiz-card">
+          <div id="quizSetupView">
+            <h3>⚔️ 테스트 설정</h3>
+            <p class="tpl-desc">분야와 문항 수를 선택하여 랜덤 모의평가를 시작하세요.</p>
+            <div class="quiz-options-grid">
+              <div>
+                <label class="field-label">출제 분야</label>
+                <select id="quizCategorySelect" class="select-control full-w">
+                  <option value="전체">전체 분야 혼합</option>
+                  <option value="개인화기·사격">개인화기·사격</option>
+                  <option value="분대 공격·방어">분대 공격·방어</option>
+                  <option value="소대 공격·방어">소대 공격·방어</option>
+                  <option value="작전·훈련">작전·훈련</option>
+                  <option value="정보·보안">정보·보안</option>
+                  <option value="인사·행정">인사·행정</option>
+                  <option value="군수·장비">군수·장비</option>
+                  <option value="통신·체계">통신·체계</option>
+                  <option value="지휘·일반">지휘·일반</option>
+                </select>
+              </div>
+              <div>
+                <label class="field-label">문항 수</label>
+                <select id="quizCountSelect" class="select-control full-w">
+                  <option value="5">5문항 (스피드 점검)</option>
+                  <option value="10" selected>10문항 (표준 평가)</option>
+                  <option value="15">15문항 (심화 평가)</option>
+                </select>
+              </div>
+            </div>
+            <button id="startQuizBtn" class="btn-primary full-w" type="button" style="margin-top: 18px;">
+              모의평가 시작하기
+            </button>
+          </div>
+
+          <div id="quizPlayView" class="hidden">
+            <div class="quiz-progress-bar">
+              <span id="quizProgressText" class="mono">문제 1 / 10</span>
+              <span id="quizLiveScore" class="mono text-accent">현재 점수: 0</span>
+            </div>
+            <div class="quiz-question-box">
+              <span id="quizQBadge" class="badge-accent">약어 → 의미</span>
+              <h3 id="quizQuestionText"></h3>
+            </div>
+            <div id="quizChoices" class="quiz-choices"></div>
+            <div id="quizFeedback" class="quiz-feedback hidden"></div>
+            <button id="nextQuestionBtn" class="btn-primary full-w hidden" type="button">다음 문제 →</button>
+          </div>
+
+          <div id="quizResultView" class="hidden">
+            <div class="result-summary">
+              <div class="result-badge" id="resultGradeBadge">특급 전사</div>
+              <h3 id="resultScoreTitle" class="mono">10 / 10 (100%)</h3>
+              <p id="resultComment"></p>
+            </div>
+
+            <div class="score-submit-box">
+              <h4>🏆 리더보드에 기록 등록하기</h4>
+              <div class="score-inputs">
+                <input type="text" id="playerNameInput" class="text-input" placeholder="계급 및 성명 (예: 소위 김지호)" />
+                <input type="text" id="playerUnitInput" class="text-input" placeholder="소속/병과 (예: 1사단 보병)" />
+              </div>
+              <button id="submitScoreBtn" class="btn-primary full-w" type="button">점수 등록하기</button>
+            </div>
+
+            <button id="retryQuizBtn" class="btn-secondary full-w" type="button" style="margin-top: 10px;">
+              다시 도전하기
+            </button>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-title-row">
+            <h3>🏆 초급간부 명예의 전당</h3>
+            <button id="refreshLeaderboardBtn" class="btn-secondary btn-sm" type="button">새로고침</button>
+          </div>
+          <p class="tpl-desc" id="leaderboardSourceLabel">로컬 기록 또는 Supabase 실시간 랭킹</p>
+          <div id="leaderboardList" class="leaderboard-list"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== MODAL 1: 용어 상세 + 선배 실무 팁 ==================== -->
+  <div id="termDetailModal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <span id="modalCategoryBadge" class="badge-accent">작전·훈련</span>
+          <span id="modalImportanceBadge" class="badge-gold">필수 암기</span>
+          <span id="modalSourceBadge" class="badge-muted">교범</span>
+        </div>
+        <button class="modal-close" data-close-modal="termDetailModal" type="button">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="detail-title-row">
+          <div>
+            <h2 id="modalTermTitle">작전통제 (OPCON)</h2>
+            <p id="modalTermSub" class="detail-sub mono">Operational Control · 作戰統制</p>
+          </div>
+          <div class="detail-actions">
+            <button id="modalBookmarkBtn" class="btn-secondary btn-sm" type="button">🔖 저장</button>
+            <button id="modalMasteredBtn" class="btn-secondary btn-sm" type="button">✅ 암기완료</button>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h4>📌 핵심 정의</h4>
+          <p id="modalDefinition"></p>
+        </div>
+
+        <div class="detail-section tip-highlight">
+          <h4>🎖️ 초급간부 실무 핵심 팁</h4>
+          <p id="modalPracticalTip"></p>
+        </div>
+
+        <div class="detail-section example-box">
+          <h4>💬 야전/보고 실전 예문</h4>
+          <p id="modalExample"></p>
+        </div>
+
+        <div class="detail-section">
+          <h4>🔗 연관 용어</h4>
+          <div id="modalRelatedTags" class="related-tags"></div>
+        </div>
+
+        <div class="detail-section tips-community">
+          <h4>💡 동료·선배 간부 한줄 노하우 (실시간 공유)</h4>
+          <form id="addTipForm" class="tip-form">
+            <input type="text" id="tipAuthorInput" class="text-input" placeholder="계급/닉네임 (예: 중위 박선임)" required />
+            <input type="text" id="tipContentInput" class="text-input" placeholder="야전에서 겪은 암기법이나 주의사항을 공유해주세요..." required />
+            <button type="submit" class="btn-primary">등록</button>
+          </form>
+          <div id="termTipsList" class="tips-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: 신규 용어 제보/등록 ==================== -->
+  <div id="addTermModal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>➕ 신규 군사용어·약어 제보 및 등록</h3>
+        <button class="modal-close" data-close-modal="addTermModal" type="button">✕</button>
+      </div>
+      <form id="addTermForm" class="modal-body form-stack">
+        <div class="form-row-2">
+          <div>
+            <label class="field-label">용어명 (한글 + 약어) *</label>
+            <input type="text" id="newTermName" class="text-input full-w" placeholder="예: 전투근무지원 (CSS)" required />
+          </div>
+          <div>
+            <label class="field-label">핵심 약어 *</label>
+            <input type="text" id="newTermAbbr" class="text-input mono full-w" placeholder="예: CSS" required />
+          </div>
+        </div>
+        <div class="form-row-2">
+          <div>
+            <label class="field-label">영문 원어</label>
+            <input type="text" id="newTermEnglish" class="text-input full-w" placeholder="예: Combat Service Support" />
+          </div>
+          <div>
+            <label class="field-label">분야 *</label>
+            <select id="newTermCategory" class="select-control full-w">
+              <option value="개인화기·사격">개인화기·사격</option>
+              <option value="분대 공격·방어">분대 공격·방어</option>
+              <option value="소대 공격·방어">소대 공격·방어</option>
+              <option value="작전·훈련">작전·훈련</option>
+              <option value="정보·보안">정보·보안</option>
+              <option value="인사·행정">인사·행정</option>
+              <option value="군수·장비">군수·장비</option>
+              <option value="통신·체계">통신·체계</option>
+              <option value="지휘·일반">지휘·일반</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row-2">
+          <div>
+            <label class="field-label">중요도</label>
+            <select id="newTermImportance" class="select-control full-w">
+              <option value="필수 암기">필수 암기</option>
+              <option value="실무 빈출" selected>실무 빈출</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label">제보자 (계급/성명)</label>
+            <input type="text" id="newTermAuthor" class="text-input full-w" placeholder="예: 소위 김지호" />
+          </div>
+        </div>
+        <div>
+          <label class="field-label">용어 정의 *</label>
+          <textarea id="newTermDef" class="report-textarea" rows="3" placeholder="초급간부가 이해하기 쉽게 명확한 정의를 입력하세요." required></textarea>
+        </div>
+        <div>
+          <label class="field-label">초급간부 실무 팁</label>
+          <textarea id="newTermTip" class="report-textarea" rows="2" placeholder="야전/행정실에서 실수하기 쉬운 포인트를 적어주세요."></textarea>
+        </div>
+        <div>
+          <label class="field-label">실전 예문</label>
+          <input type="text" id="newTermExample" class="text-input full-w" placeholder="예: 작전명령 제4항 전투근무지원 계획을 확인하십시오." />
+        </div>
+        <button type="submit" class="btn-primary full-w">사전에 등록하기</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 3: Supabase & GitHub 연동 설정 ==================== -->
+  <div id="supabaseModal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>⚡ Supabase 클라우드 DB & GitHub 연동 센터</h3>
+        <button class="modal-close" data-close-modal="supabaseModal" type="button">✕</button>
+      </div>
+      <div class="modal-body form-stack">
+        <div class="info-callout">
+          <strong>왜 Supabase를 연결하나요?</strong>
+          <p>Supabase를 연결하면 신규 제보 용어, 선배 간부 실무 팁 댓글, 퀴즈 명예의 전당 랭킹이 모든 사용자와 실시간으로 클라우드 DB에 공유됩니다.</p>
+        </div>
+
+        <div>
+          <label class="field-label">Supabase Project URL</label>
+          <input type="url" id="sbUrlInput" class="text-input mono full-w" placeholder="https://your-project-id.supabase.co" />
+        </div>
+        <div>
+          <label class="field-label">Supabase Anon (Public) Key</label>
+          <input type="password" id="sbKeyInput" class="text-input mono full-w" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." />
+        </div>
+
+        <div id="sbTestResult" class="sb-test-result hidden"></div>
+
+        <div class="btn-row">
+          <button id="sbSaveConnectBtn" class="btn-primary" type="button">저장 및 연결 테스트</button>
+          <button id="sbSeedBtn" class="btn-secondary" type="button">기본 용어 DB 일괄 업로드</button>
+          <button id="sbDisconnectBtn" class="btn-danger" type="button">연결 해제</button>
+        </div>
+
+        <hr class="divider" />
+
+        <div class="setup-guide-box">
+          <h4>📋 3분 세팅 체크리스트 (GitHub Pages + Supabase)</h4>
+          <ol>
+            <li><strong>Supabase:</strong> 새 프로젝트 생성 → <code>SQL Editor</code>에서 <code>supabase_schema.sql</code> 실행</li>
+            <li><strong>키 입력:</strong> <code>Project Settings → API</code>에서 URL과 <code>anon public</code> 키를 위 입력란에 붙여넣고 연결</li>
+            <li><strong>GitHub 배포:</strong> 저장소에 전체 파일 업로드 → <code>Settings → Pages</code>에서 <code>main</code> 브랜치 배포</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <footer class="site-footer">
+    <p>MIL.ARCHIVE · 초급간부 군사용어·전술 아카이브 · Supabase & GitHub Pages Ready</p>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
